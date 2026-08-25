@@ -1,0 +1,28 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Na Chapa — ADM</title>
+<style>
+body{margin:0;background:#090909;color:#fff;font-family:Arial}.login,.app{min-height:100vh}.login{display:flex;align-items:center;justify-content:center}
+.box,.panel{background:#171717;border:1px solid #551017;border-radius:15px;padding:20px}.box{width:330px}
+input,select,button{width:100%;padding:11px;margin:6px 0;border-radius:8px;box-sizing:border-box}input,select{background:#111;color:#fff;border:1px solid #444}button{background:#e10613;color:#fff;border:0;font-weight:bold;cursor:pointer}
+header{padding:18px;background:#100002;border-bottom:3px solid #e10613;display:flex;justify-content:space-between}.wrap{max-width:1100px;margin:auto;padding:18px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card{background:#171717;border:1px solid #441014;border-radius:12px;padding:15px}.num{font-size:28px;font-weight:bold}
+table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #333;text-align:left}.red{color:#e10613}.hidden{display:none}
+</style></head><body>
+<div id="login" class="login"><div class="box"><h2>NA <span class="red">CHAPA</span> ADM</h2><p>Área administrativa</p>
+<input id="pass" type="password" placeholder="Senha"><button onclick="entrar()">ENTRAR</button><small>Senha inicial: 1234</small><p id="msg"></p></div></div>
+<div id="app" class="hidden"><header><b>NA <span class="red">CHAPA</span> — PAINEL ADM</b><button style="width:auto" onclick="sair()">SAIR</button></header>
+<div class="wrap"><div class="cards"><div class="card">Pedidos<div class="num" id="n">0</div></div><div class="card">Faturamento<div class="num" id="f">R$ 0,00</div></div><div class="card">Em preparo<div class="num" id="p">0</div></div></div>
+<div class="panel" style="margin-top:15px"><h2>📋 Pedidos</h2><button onclick="novo()">➕ Novo pedido</button><div style="overflow:auto"><table><thead><tr><th>Nº</th><th>Cliente</th><th>Itens</th><th>Bairro</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody id="lista"></tbody></table></div></div>
+<div class="panel" style="margin-top:15px"><h2>🍝 Cardápio</h2><p>Macarrão Frango P R$25 / G R$35</p><p>Macarrão Carne P R$25 / G R$35</p><p>Jantinha Frango/Carne/Porco/Misto P R$20 / G R$30</p></div>
+<div class="panel" style="margin-top:15px"><h2>🚚 Entregas</h2><p>Pedido mínimo: <b>R$ 20,00</b></p><p>Serra Dourada 1 • Serra Dourada 2 • Serra Dourada 3 • Novo Porto Canoa • Pomar • Eldorado • Nova Carapina 1 • Nova Carapina 2 • Porto Canoa • Barcelona</p></div>
+</div></div>
+<script>
+let orders=JSON.parse(localStorage.getItem('na_chapa_orders')||'[]');
+function entrar(){if(pass.value==='1234'){sessionStorage.adm='1';show()}else msg.textContent='Senha incorreta.'}
+function show(){login.classList.add('hidden');app.classList.remove('hidden');render()}function sair(){sessionStorage.removeItem('adm');location.reload()}
+function novo(){let cliente=prompt('Nome do cliente:');if(!cliente)return;let itens=prompt('Pedido (ex.: 1x Jantinha Frango G):')||'';let bairro=prompt('Bairro:')||'';let total=Number(prompt('Total R$:')||0);let id=orders.length?Math.max(...orders.map(x=>x.id))+1:1;orders.unshift({id,cliente,itens,bairro,total,status:'Novo'});localStorage.setItem('na_chapa_orders',JSON.stringify(orders));render()}
+function render(){n.textContent=orders.length;f.textContent=orders.reduce((a,x)=>a+x.total,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});p.textContent=orders.filter(x=>x.status==='Em preparo').length;lista.innerHTML=orders.map((o,i)=>`<tr><td>#${String(o.id).padStart(3,'0')}</td><td>${o.cliente}</td><td>${o.itens}</td><td>${o.bairro}</td><td>R$ ${o.total.toFixed(2).replace('.',',')}</td><td><select onchange="status(${i},this.value)"><option ${o.status==='Novo'?'selected':''}>Novo</option><option ${o.status==='Em preparo'?'selected':''}>Em preparo</option><option ${o.status==='Saiu para entrega'?'selected':''}>Saiu para entrega</option><option ${o.status==='Entregue'?'selected':''}>Entregue</option><option ${o.status==='Cancelado'?'selected':''}>Cancelado</option></select></td><td><button onclick="del(${i})">X</button></td></tr>`).join('')}
+function status(i,v){orders[i].status=v;localStorage.setItem('na_chapa_orders',JSON.stringify(orders));render()}
+function del(i){orders.splice(i,1);localStorage.setItem('na_chapa_orders',JSON.stringify(orders));render()}
+if(sessionStorage.adm==='1')show()
+</script></body></html>
