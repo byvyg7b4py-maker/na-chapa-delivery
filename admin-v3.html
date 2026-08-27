@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Na Chapa — ADM V3</title>
+<style>
+:root{--red:#e10613;--bg:#080808;--card:#171717;--line:#4d1017;--muted:#aaa;--green:#25d366}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif}
+header{background:#110003;border-bottom:3px solid var(--red);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.logo{font-size:23px;font-weight:900}.red{color:var(--red)}.wrap{max-width:1220px;margin:auto;padding:18px}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}.loginbox,.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.loginbox{width:min(420px,100%)}
+nav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}button{border:0;border-radius:9px;padding:10px 13px;background:var(--red);color:#fff;font-weight:800;cursor:pointer}button.gray{background:#333}button.green{background:var(--green);color:#071007}button.danger{background:#8b0000}
+.tab{display:none}.tab.on{display:block}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#0d0d0d;color:#fff}label{display:block;margin:9px 0}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #333;text-align:left;vertical-align:top}th{color:#ff646d}.muted{color:var(--muted);font-size:13px}.thumb{width:72px;height:58px;object-fit:cover;border-radius:8px;background:#222}
+.modal{display:none;position:fixed;inset:0;background:#000d;z-index:30;align-items:center;justify-content:center;padding:16px}.modal.on{display:flex}.modalbox{width:min(690px,100%);max-height:94vh;overflow:auto;background:#171717;border:1px solid #691019;border-radius:15px;padding:18px}.close{float:right;background:#333}
+.badge{display:inline-block;padding:5px 8px;border-radius:20px;background:#333;font-size:12px;font-weight:bold}.stat h2{margin:8px 0 0}.toolbar{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+@media(max-width:700px){.row{grid-template-columns:1fr}th:nth-child(4),td:nth-child(4){display:none}}
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <div class="loginbox">
+    <div class="logo">NA <span class="red">CHAPA</span> — ADM V3</div>
+    <p class="muted">Login real via Supabase Authentication</p>
+    <label>E-mail<input id="loginEmail" type="email" autocomplete="username"></label>
+    <label>Senha<input id="loginPassword" type="password" autocomplete="current-password"></label>
+    <button class="green" style="width:100%" onclick="loginAdmin()">ENTRAR</button>
+    <p id="loginMsg" class="muted"></p>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<header>
+  <div class="logo">NA <span class="red">CHAPA</span> — ÁREA ADM V3</div>
+  <div><button class="gray" onclick="window.open('index.html','_blank')">Ver site</button> <button onclick="logout()">Sair</button></div>
+</header>
+
+<main class="wrap">
+<nav>
+<button onclick="showTab('dashboard')">📊 Visão geral</button>
+<button onclick="showTab('pedidos')">📋 Pedidos</button>
+<button onclick="showTab('produtos')">🍝 Produtos</button>
+<button onclick="showTab('jantinhas')">🍽️ Jantinhas</button>
+<button onclick="showTab('adicionais')">➕ Adicionais</button>
+<button onclick="showTab('bairros')">🚚 Bairros</button>
+<button onclick="showTab('config')">⚙️ Configurações</button>
+</nav>
+
+<section id="dashboard" class="tab on">
+  <div class="grid">
+    <div class="card stat">Pedidos<h2 id="statOrders">0</h2></div>
+    <div class="card stat">Faturamento<h2 id="statRevenue">R$ 0,00</h2></div>
+    <div class="card stat">Em preparo<h2 id="statPrep">0</h2></div>
+    <div class="card stat">Saiu p/ entrega<h2 id="statDelivery">0</h2></div>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <h2>✅ ADM conectado ao Supabase</h2>
+    <p>As alterações feitas aqui vão para o banco. O site dos clientes lê o mesmo banco.</p>
+    <p class="muted">Os pedidos são atualizados automaticamente a cada 10 segundos enquanto esta página estiver aberta.</p>
+  </div>
+</section>
+
+<section id="pedidos" class="tab">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+      <h2>📋 Pedidos</h2><button class="gray" onclick="loadOrders()">↻ Atualizar</button>
+    </div>
+    <div style="overflow:auto">
+      <table><thead><tr><th>#</th><th>Cliente</th><th>Itens</th><th>Bairro</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead><tbody id="ordersTable"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<section id="produtos" class="tab">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🍝 Produtos / bebidas</h2><button onclick="openProductForm('produtos',-1)">➕ Novo</button></div>
+    <div style="overflow:auto"><table><thead><tr><th>Foto</th><th>Produto</th><th>P/preço</th><th>G</th><th>Disponível</th><th></th></tr></thead><tbody id="productsTable"></tbody></table></div>
+  </div>
+</section>
+
+<section id="jantinhas" class="tab">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🍽️ Jantinhas</h2><button onclick="openProductForm('jantinhas',-1)">➕ Nova</button></div>
+    <div class="grid" id="jantinhasGrid"></div>
+  </div>
+</section>
+
+<section id="adicionais" class="tab">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>➕ Adicionais</h2><button onclick="openAddForm(-1)">➕ Novo</button></div>
+    <div style="overflow:auto"><table><thead><tr><th>Nome</th><th>Preço</th><th>Disponível</th><th></th></tr></thead><tbody id="addsTable"></tbody></table></div>
+  </div>
+</section>
+
+<section id="bairros" class="tab">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🚚 Bairros e taxas</h2><button onclick="openAreaForm(-1)">➕ Novo bairro</button></div>
+    <div class="grid" id="areasGrid"></div>
+  </div>
+</section>
+
+<section id="config" class="tab">
+  <div class="panel">
+    <h2>⚙️ Configurações do negócio</h2>
+    <div class="row">
+      <label>WhatsApp<input id="cfgWhatsapp"></label>
+      <label>Instagram<input id="cfgInstagram"></label>
+      <label>Pedido mínimo<input id="cfgMin" type="number" step=".01"></label>
+      <label>Horário<input id="cfgHorario"></label>
+    </div>
+    <button class="green" onclick="saveConfig()">💾 SALVAR</button>
+  </div>
+</section>
+</main>
+</div>
+
+<div id="modal" class="modal"><div class="modalbox"><button class="close" onclick="closeModal()">✕</button><div id="modalContent"></div></div></div>
+
+<script>
+const SUPABASE_URL="https://jadruovvzvubiujoyfgx.supabase.co";
+const SUPABASE_KEY="sb_publishable_SgIXosTtTVDGlheKBr73zg_llUnfrhp";
+let token=localStorage.getItem("nc_admin_token")||"";
+let produtos=[],jantinhas=[],adicionais=[],bairros=[],configuracoes={},pedidos=[],itensPedido=[];
+
+const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+
+async function authFetch(path,opt={}){
+  const headers={apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json",...(opt.headers||{})};
+  const r=await fetch(SUPABASE_URL+path,{...opt,headers});
+  if(!r.ok) throw new Error(await r.text());
+  const txt=await r.text();
+  return txt?JSON.parse(txt):null;
+}
+async function rest(path,opt={}){return authFetch("/rest/v1/"+path,opt)}
+
+async function loginAdmin(){
+  try{
+    const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{
+      method:"POST",
+      headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({email:loginEmail.value.trim(),password:loginPassword.value})
+    });
+    if(!r.ok) throw new Error(await r.text());
+    const data=await r.json();
+    token=data.access_token;
+    localStorage.setItem("nc_admin_token",token);
+    showApp();
+  }catch(e){
+    console.error(e);
+    loginMsg.textContent="Login inválido ou acesso não permitido.";
+  }
+}
+function logout(){localStorage.removeItem("nc_admin_token");location.reload()}
+function showApp(){login.style.display="none";app.style.display="block";loadAll()}
+if(token) showApp();
+
+function showTab(id){document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));document.getElementById(id).classList.add("on")}
+function openModal(html){modalContent.innerHTML=html;modal.classList.add("on")}
+function closeModal(){modal.classList.remove("on")}
+
+async function loadAll(){
+  try{
+    const [p,j,a,b,c]=await Promise.all([
+      rest("produtos?select=*&order=id.asc"),
+      rest("jantinhas?select=*&order=id.asc"),
+      rest("adicionais?select=*&order=id.asc"),
+      rest("bairros?select=*&order=nome.asc"),
+      rest("configuracoes?select=*")
+    ]);
+    produtos=p||[]; jantinhas=j||[]; adicionais=a||[]; bairros=b||[];
+    configuracoes={}; (c||[]).forEach(x=>configuracoes[x.chave]=x.valor);
+    await loadOrders();
+    renderAll();
+  }catch(e){
+    console.error(e);
+    if(String(e).includes("JWT")||String(e).includes("401")) logout();
+  }
+}
+
+async function loadOrders(){
+  try{
+    pedidos=await rest("pedidos?select=*&order=id.desc")||[];
+    itensPedido=await rest("itens_pedido?select=*&order=id.asc")||[];
+    renderOrders();
+    renderStats();
+  }catch(e){console.error(e)}
+}
+
+function renderAll(){
+  renderProducts(); renderJantinhas(); renderAdds(); renderAreas(); renderConfig(); renderStats(); renderOrders();
+}
+function renderStats(){
+  statOrders.textContent=pedidos.length;
+  statRevenue.textContent=money(pedidos.filter(o=>o.status!=="cancelado").reduce((s,o)=>s+Number(o.total||0),0));
+  statPrep.textContent=pedidos.filter(o=>o.status==="preparo").length;
+  statDelivery.textContent=pedidos.filter(o=>o.status==="entrega").length;
+}
+
+function renderOrders(){
+  ordersTable.innerHTML=pedidos.length?pedidos.map(o=>{
+    const its=itensPedido.filter(i=>i.pedido_id===o.id);
+    const area=bairros.find(b=>b.id===o.bairro_id);
+    return `<tr>
+      <td><b>#${String(o.id).padStart(3,"0")}</b><br><span class="muted">${new Date(o.criado_em).toLocaleString("pt-BR")}</span></td>
+      <td>${esc(o.cliente_nome)}<br><span class="muted">${esc(o.telefone||"")}</span></td>
+      <td>${its.map(i=>`${i.quantidade}x ${esc(i.nome_produto)} ${esc(i.tamanho||"")} ${i.adicionais?`<br><span class="muted">+ ${esc(i.adicionais)}</span>`:""}`).join("<hr>")}</td>
+      <td>${esc(area?.nome||"")}<br><span class="muted">${esc(o.endereco||"")}</span></td>
+      <td><b>${money(o.total)}</b><br><span class="muted">${esc(o.pagamento||"")}</span></td>
+      <td><select onchange="updateStatus(${o.id},this.value)">
+        ${["novo","preparo","entrega","entregue","cancelado"].map(s=>`<option value="${s}" ${o.status===s?"selected":""}>${statusLabel(s)}</option>`).join("")}
+      </select></td>
+      <td><button onclick="printOrder(${o.id})">🖨️ Comanda</button></td>
+    </tr>`;
+  }).join(""):'<tr><td colspan="7" class="muted">Nenhum pedido.</td></tr>';
+}
+function statusLabel(s){return {novo:"🟡 Novo",preparo:"🔵 Em preparo",entrega:"🟣 Saiu p/ entrega",entregue:"🟢 Entregue",cancelado:"🔴 Cancelado"}[s]||s}
+async function updateStatus(id,status){
+  try{
+    await rest(`pedidos?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({status,atualizado_em:new Date().toISOString()})});
+    await loadOrders();
+  }catch(e){alert("Erro ao atualizar status.");console.error(e)}
+}
+
+function renderProducts(){
+  productsTable.innerHTML=produtos.map((p,i)=>`<tr>
+    <td>${p.imagem_url?`<img class="thumb" src="${esc(p.imagem_url)}">`:"📷"}</td>
+    <td><b>${esc(p.nome)}</b><br><span class="muted">${esc(p.descricao||"")}</span></td>
+    <td>${money(p.preco_p)}</td><td>${p.preco_g==null?"—":money(p.preco_g)}</td>
+    <td>${p.disponivel?"✅":"❌"}</td>
+    <td><button onclick="openProductForm('produtos',${i})">✏️ Editar</button></td></tr>`).join("");
+}
+function renderJantinhas(){
+  jantinhasGrid.innerHTML=jantinhas.map((p,i)=>`<div class="card">
+    ${p.imagem_url?`<img class="thumb" src="${esc(p.imagem_url)}">`:"📷"}
+    <h3>${esc(p.nome)}</h3><p>${esc(p.descricao||"")}</p>
+    <b>P ${money(p.preco_p)} • G ${money(p.preco_g)}</b><br>
+    <span class="badge">${p.disponivel?"Disponível":"Indisponível"}</span><br><br>
+    <button onclick="openProductForm('jantinhas',${i})">✏️ Editar</button>
+  </div>`).join("");
+}
+function openProductForm(type,index){
+  const list=type==="produtos"?produtos:jantinhas;
+  const p=index>=0?list[index]:{nome:"",descricao:"",preco_p:0,preco_g:null,imagem_url:"",disponivel:true};
+  openModal(`<h2>${index>=0?"✏️ Editar":"➕ Novo"} ${type==="jantinhas"?"jantinha":"produto"}</h2>
+    <label>Nome<input id="fNome" value="${esc(p.nome)}"></label>
+    <label>Descrição<textarea id="fDesc">${esc(p.descricao||"")}</textarea></label>
+    <div class="row"><label>Preço P / preço único<input id="fP" type="number" step=".01" value="${p.preco_p??0}"></label>
+    <label>Preço G (deixe vazio para bebida/preço único)<input id="fG" type="number" step=".01" value="${p.preco_g??""}"></label></div>
+    <label>Imagem atual / URL<input id="fImg" value="${esc(p.imagem_url||"")}"></label>
+    <label>Ou escolher foto do notebook<input id="fFile" type="file" accept="image/*"></label>
+    <label><input id="fDisponivel" type="checkbox" ${p.disponivel?"checked":""}> Disponível no site</label>
+    <button class="green" onclick="saveProduct('${type}',${index})">💾 SALVAR</button>`);
+}
+async function uploadImage(file){
+  if(!file) return "";
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+  const filename=`${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/cardapio/${filename}`,{
+    method:"POST",
+    headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":file.type||"application/octet-stream","x-upsert":"true"},
+    body:file
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return `${SUPABASE_URL}/storage/v1/object/public/cardapio/${filename}`;
+}
+async function saveProduct(type,index){
+  try{
+    const list=type==="produtos"?produtos:jantinhas;
+    const current=index>=0?list[index]:null;
+    let img=fImg.value.trim();
+    if(fFile.files[0]) img=await uploadImage(fFile.files[0]);
+    const body={nome:fNome.value.trim(),descricao:fDesc.value.trim(),preco_p:Number(fP.value||0),preco_g:fG.value===""?null:Number(fG.value),imagem_url:img||null,disponivel:fDisponivel.checked,atualizado_em:new Date().toISOString()};
+    const table=type;
+    if(index>=0){
+      await rest(`${table}?id=eq.${current.id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    }else{
+      await rest(table,{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    }
+    closeModal(); await loadAll();
+  }catch(e){console.error(e);alert("Erro ao salvar produto/foto. Confira as políticas do ADM e do Storage.")}
+}
+
+function renderAdds(){
+  addsTable.innerHTML=adicionais.map((a,i)=>`<tr><td>${esc(a.nome)}</td><td>${money(a.preco)}</td><td>${a.disponivel?"✅":"❌"}</td><td><button onclick="openAddForm(${i})">Editar</button></td></tr>`).join("");
+}
+function openAddForm(i){
+  const a=i>=0?adicionais[i]:{nome:"",preco:0,disponivel:true};
+  openModal(`<h2>➕ Adicional</h2><label>Nome<input id="aNome" value="${esc(a.nome)}"></label><label>Preço<input id="aPreco" type="number" step=".01" value="${a.preco}"></label><label><input id="aDisp" type="checkbox" ${a.disponivel?"checked":""}> Disponível</label><button class="green" onclick="saveAdd(${i})">SALVAR</button>`);
+}
+async function saveAdd(i){
+  try{
+    const body={nome:aNome.value.trim(),preco:Number(aPreco.value||0),disponivel:aDisp.checked};
+    if(i>=0) await rest(`adicionais?id=eq.${adicionais[i].id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    else await rest("adicionais",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    closeModal(); await loadAll();
+  }catch(e){console.error(e);alert("Erro ao salvar adicional.")}
+}
+
+function renderAreas(){
+  areasGrid.innerHTML=bairros.map((b,i)=>`<div class="card"><b>📍 ${esc(b.nome)}</b><p>Taxa: ${money(b.taxa)}</p><span class="badge">${b.disponivel?"Ativo":"Inativo"}</span><br><br><button onclick="openAreaForm(${i})">Editar</button></div>`).join("");
+}
+function openAreaForm(i){
+  const b=i>=0?bairros[i]:{nome:"",taxa:0,disponivel:true};
+  openModal(`<h2>🚚 Bairro</h2><label>Nome<input id="bNome" value="${esc(b.nome)}"></label><label>Taxa<input id="bTaxa" type="number" step=".01" value="${b.taxa}"></label><label><input id="bDisp" type="checkbox" ${b.disponivel?"checked":""}> Disponível</label><button class="green" onclick="saveArea(${i})">SALVAR</button>`);
+}
+async function saveArea(i){
+  try{
+    const body={nome:bNome.value.trim(),taxa:Number(bTaxa.value||0),disponivel:bDisp.checked};
+    if(i>=0) await rest(`bairros?id=eq.${bairros[i].id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    else await rest("bairros",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    closeModal(); await loadAll();
+  }catch(e){console.error(e);alert("Erro ao salvar bairro.")}
+}
+
+function renderConfig(){
+  cfgWhatsapp.value=configuracoes.whatsapp||"27981115864";
+  cfgInstagram.value=configuracoes.instagram||"@nachapamacarrao.serra";
+  cfgMin.value=configuracoes.pedido_minimo||"20.00";
+  cfgHorario.value=configuracoes.horario||"";
+}
+async function upsertConfig(chave,valor){
+  const exists=Object.prototype.hasOwnProperty.call(configuracoes,chave);
+  if(exists) await rest(`configuracoes?chave=eq.${encodeURIComponent(chave)}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({valor,atualizado_em:new Date().toISOString()})});
+  else await rest("configuracoes",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({chave,valor})});
+}
+async function saveConfig(){
+  try{
+    await upsertConfig("whatsapp",cfgWhatsapp.value.trim());
+    await upsertConfig("instagram",cfgInstagram.value.trim());
+    await upsertConfig("pedido_minimo",String(Number(cfgMin.value||20)));
+    await upsertConfig("horario",cfgHorario.value.trim());
+    alert("Configurações salvas.");
+    await loadAll();
+  }catch(e){console.error(e);alert("Erro ao salvar configurações.")}
+}
+
+function printOrder(id){
+  const o=pedidos.find(x=>x.id===id);
+  const its=itensPedido.filter(i=>i.pedido_id===id);
+  const area=bairros.find(b=>b.id===o.bairro_id);
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Pedido #${id}</title>
+  <style>@page{size:58mm auto;margin:0}body{width:48mm;margin:0 auto;padding:3mm 0;font:11px monospace;color:#000;background:#fff}h2{text-align:center;font-size:14px;margin:0}hr{border:0;border-top:1px dashed #000}.c{text-align:center}.big{font-size:14px;font-weight:bold}</style></head>
+  <body><h2>NA CHAPA</h2><div class="c">MACARRÃO DELIVERY</div><hr>
+  <div class="big">PEDIDO #${String(o.id).padStart(3,"0")}</div>${new Date(o.criado_em).toLocaleString("pt-BR")}<hr>
+  CLIENTE: ${esc(o.cliente_nome)}<br>WHATS: ${esc(o.telefone||"")}<br>
+  END: ${esc(o.endereco||"")}<br>BAIRRO: ${esc(area?.nome||"")}<hr>
+  ${its.map(i=>`<b>${i.quantidade}x ${esc(i.nome_produto)} ${esc(i.tamanho||"")}</b><br>${i.adicionais?`+ ${esc(i.adicionais)}<br>`:""}${money(i.subtotal)}<br><br>`).join("")}
+  <hr>PAGAMENTO: ${esc(o.pagamento||"")}<br>SUBTOTAL: ${money(o.subtotal)}<br>ENTREGA: ${money(o.taxa_entrega)}<br><span class="big">TOTAL: ${money(o.total)}</span><br>
+  ${o.observacao?`OBS: ${esc(o.observacao)}<br>`:""}<hr><div class="c">BATEU A FOME?<br>PEDE NA CHAPA!</div><script>window.print()<\/script></body></html>`;
+  const w=window.open("","_blank","width=420,height=700");w.document.write(html);w.document.close();
+}
+
+setInterval(()=>{if(token)loadOrders()},10000);
+</script>
+</body>
+</html>
