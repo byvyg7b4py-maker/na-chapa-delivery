@@ -1,32 +1,309 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Na Chapa Macarrão Delivery</title>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Na Chapa Macarrão Delivery</title>
 <style>
-body{margin:0;background:#090909;color:#fff;font-family:Arial,sans-serif}header{text-align:center;padding:24px;background:#170003;border-bottom:3px solid #e10613}.logo{font-size:34px;font-weight:900}.red{color:#e10613}.wrap{max-width:1000px;margin:auto;padding:18px}.box,.card{background:#171717;border:1px solid #4b1015;border-radius:14px;padding:15px;margin-bottom:14px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.btn,button{background:#e10613;color:#fff;border:0;border-radius:9px;padding:11px 14px;font-weight:bold;cursor:pointer}.gray{background:#333}.muted{color:#aaa;font-size:13px}.price{font-size:18px;font-weight:bold}.modal{display:none;position:fixed;inset:0;background:#000c;align-items:center;justify-content:center;padding:15px}.modal.on{display:flex}.modalbox{width:min(650px,100%);max-height:94vh;overflow:auto;background:#161616;border:1px solid #651018;border-radius:15px;padding:18px}input,select,textarea{width:100%;padding:10px;background:#111;color:#fff;border:1px solid #444;border-radius:8px;margin:5px 0}.item{border-bottom:1px solid #333;padding:10px 0}
-</style></head><body>
-<header><div class="logo">NA <span class="red">CHAPA</span></div><div>MACARRÃO DELIVERY • JANTINHA NA CHAPA</div><div>📲 27 98111-5864</div></header>
+:root{--red:#e10613;--bg:#090909;--card:#171717;--line:#461016;--muted:#aaa;--green:#25d366}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif}
+header{background:linear-gradient(135deg,#170003,#080808);border-bottom:3px solid var(--red);text-align:center;padding:24px 15px}
+.logo{font-size:36px;font-weight:1000}.logo span{color:var(--red)}.wrap{max-width:1100px;margin:auto;padding:18px}
+.notice,.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:15px}
+.notice{text-align:center;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card img{width:100%;height:165px;object-fit:cover;border-radius:10px;background:#222}.muted{color:var(--muted);font-size:13px}
+.price{font-size:19px;font-weight:900;margin:10px 0}.btn,button{background:var(--red);color:#fff;border:0;border-radius:9px;padding:11px 14px;font-weight:900;cursor:pointer}
+.gray{background:#333}.green{background:var(--green);color:#061007}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;margin:8px 0}input,select,textarea{width:100%;padding:11px;background:#0c0c0c;color:#fff;border:1px solid #444;border-radius:8px}
+.modal{display:none;position:fixed;inset:0;background:#000c;z-index:50;align-items:center;justify-content:center;padding:15px}.modal.on{display:flex}
+.box{width:min(680px,100%);max-height:94vh;overflow:auto;background:#161616;border:1px solid #691019;border-radius:15px;padding:18px}
+.choice{display:flex;gap:8px;flex-wrap:wrap}.choice button{background:#333}.choice button.sel{background:var(--red)}
+.cart-item{border-bottom:1px solid #333;padding:10px 0}.total{font-size:22px;font-weight:1000;margin:14px 0}
+footer{text-align:center;color:#aaa;padding:28px 15px}
+.section-note{margin-top:-8px;margin-bottom:14px}
+@media(max-width:650px){.row{grid-template-columns:1fr}.logo{font-size:29px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">NA <span>CHAPA</span></div>
+  <div>MACARRÃO DELIVERY • JANTINHA NA CHAPA</div>
+  <div style="margin-top:6px">📲 27 98111-5864</div>
+</header>
+
 <main class="wrap">
-<div class="box"><b>🚚 Entregamos nestes bairros</b><br><button class="gray" onclick="showAreas()">Ver bairros e taxas</button> • Pedido mínimo: <b id="minLabel">R$ 20,00</b></div>
-<h2>🍝 Macarrão na Chapa</h2><div id="produtos" class="grid"></div>
-<h2>🍽️ Jantinha na Chapa</h2><div id="jantinhas" class="grid"></div>
-<div class="box"><h2>🛒 Seu pedido</h2><div id="carrinho">Seu carrinho está vazio.</div><h3>Subtotal: <span id="subtotal">R$ 0,00</span></h3><button onclick="checkout()">FINALIZAR PEDIDO</button></div>
+  <div class="notice">
+    <b>🚚 Entregamos nestes bairros</b><br><br>
+    <button class="gray" onclick="showAreas()">📍 VER BAIRROS E TAXAS</button>
+    <span style="margin-left:8px">Pedido mínimo: <b id="minimumLabel">R$ 20,00</b></span>
+  </div>
+
+  <h2>🍝 Macarrão na Chapa</h2>
+  <p class="muted section-note">Escolha o tamanho e, se quiser, marque adicionais.</p>
+  <div id="macarrao" class="grid"></div>
+
+  <h2>🍽️ Jantinha na Chapa</h2>
+  <p class="muted section-note">Acompanhamentos: arroz + tropeiro/farofa + batata frita + vinagrete. Adicionais opcionais.</p>
+  <div id="jantinhas" class="grid"></div>
+
+  <h2>🥤 Bebidas</h2>
+  <p class="muted section-note">Bebidas são adicionadas direto ao carrinho, sem adicionais.</p>
+  <div id="bebidas" class="grid"></div>
+
+  <div class="panel" style="margin-top:18px">
+    <h2>🛒 Seu pedido</h2>
+    <div id="cart">Seu carrinho está vazio.</div>
+    <div class="total">Subtotal: <span id="subtotal">R$ 0,00</span></div>
+    <button onclick="checkout()">FINALIZAR PEDIDO</button>
+  </div>
 </main>
-<div id="modal" class="modal"><div class="modalbox"><button class="gray" style="float:right" onclick="closeM()">✕</button><div id="mc"></div></div></div>
-<footer style="text-align:center;color:#aaa;padding:25px">@nachapamacarrao.serra</footer>
+
+<div id="modal" class="modal">
+  <div class="box">
+    <button class="gray" style="float:right" onclick="closeModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<footer>Na Chapa Macarrão Delivery • @nachapamacarrao.serra</footer>
+
 <script>
-const SUPABASE_URL="https://jadruovvzvubiujoyfgx.supabase.co";
-const SUPABASE_KEY="sb_publishable_SgIXosTtTVDGlheKBr73zg_llUnfrhp";
-let ps=[],js=[],adds=[],areas=[],cfg={},cart=[],current=null,size="P";
+const SUPABASE_URL = "https://jadruovvzvubiujoyfgx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_SgIXosTtTVDGlheKBr73zg_llUnfrhp";
+
+let produtos=[], jantinhas=[], adicionais=[], bairros=[], configuracoes={};
+let carrinho=[];
+let tamanhoSelecionado="P";
+let itemAtual=null;
+
 const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const esc=s=>String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-async function rest(path,opt={}){let r=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...opt,headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",...(opt.headers||{})}});if(!r.ok)throw Error(await r.text());let t=await r.text();return t?JSON.parse(t):null}
-async function rpc(name,body){let r=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+name,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok)throw Error(await r.text());return await r.json()}
-async function start(){if(SUPABASE_KEY.includes("COLE_"))return alert("Coloque sua Publishable Key no index.html antes de publicar.");try{[ps,js,adds,areas]=await Promise.all([rest("produtos?select=*&disponivel=eq.true&order=id"),rest("jantinhas?select=*&disponivel=eq.true&order=id"),rest("adicionais?select=*&disponivel=eq.true&order=id"),rest("bairros?select=*&disponivel=eq.true&order=nome")]);let c=await rest("configuracoes?select=chave,valor");(c||[]).forEach(x=>cfg[x.chave]=x.valor);minLabel.textContent=money(Number(cfg.pedido_minimo||20));render()}catch(e){console.error(e);alert("Erro ao carregar o cardápio. Confira a Publishable Key e as políticas.")}}
-function render(){produtos.innerHTML=ps.map((p,i)=>card(p,"p",i)).join("")||"<div class='card'>Nenhum produto.</div>";jantinhas.innerHTML=js.map((p,i)=>card(p,"j",i)).join("")||"<div class='card'>Nenhuma jantinha.</div>";renderCart()}
-function card(p,t,i){return `<div class="card"><h3>${esc(p.nome)}</h3><p class="muted">${esc(p.descricao||"")}</p><div class="price">P ${money(p.preco_p)} • G ${money(p.preco_g)}</div><button onclick="choose('${t}',${i})">ESCOLHER</button></div>`}
-function choose(t,i){current={t,i};let p=t==="p"?ps[i]:js[i];size="P";mc.innerHTML=`<h2>${esc(p.nome)}</h2><p>Tamanho</p><button onclick="size='P'">P — ${money(p.preco_p)}</button> <button onclick="size='G'">G — ${money(p.preco_g)}</button><h3>Adicionais</h3>${adds.map((a,j)=>`<label><input class="ac" type="checkbox" value="${j}"> ${esc(a.nome)} (+${money(a.preco)})</label>`).join("")}<label>Quantidade<input id="qty" type="number" min="1" value="1"></label><button onclick="addItem()">ADICIONAR</button>`;openM()}
-function addItem(){let p=current.t==="p"?ps[current.i]:js[current.i],base=Number(size==="P"?p.preco_p:p.preco_g),aa=[...document.querySelectorAll(".ac:checked")].map(x=>adds[+x.value]),extra=aa.reduce((s,a)=>s+Number(a.preco),0),q=Math.max(1,+qty.value||1);cart.push({nome:p.nome,tipo:current.t,id:p.id,tamanho:size,q,unit:base+extra,adds:aa.map(a=>a.nome),sub:(base+extra)*q});closeM();renderCart()}
-function renderCart(){let s=cart.reduce((a,x)=>a+x.sub,0);subtotal.textContent=money(s);carrinho.innerHTML=cart.length?cart.map((x,i)=>`<div class="item"><b>${x.q}x ${esc(x.nome)} ${x.tamanho}</b><br>${esc(x.adds.join(", ")||"Sem adicionais")} — ${money(x.sub)} <button class="gray" onclick="cart.splice(${i},1);renderCart()">Remover</button></div>`).join(""):"Seu carrinho está vazio."}
-function showAreas(){mc.innerHTML="<h2>🚚 Bairros atendidos</h2>"+areas.map(a=>`<p>📍 <b>${esc(a.nome)}</b> — ${Number(a.taxa)?money(a.taxa):"taxa a confirmar"}</p>`).join("");openM()}
-function checkout(){let s=cart.reduce((a,x)=>a+x.sub,0),m=Number(cfg.pedido_minimo||20);if(!cart.length)return alert("Adicione um item.");if(s<m)return alert("Pedido mínimo: "+money(m));mc.innerHTML=`<h2>Finalizar pedido</h2><label>Nome<input id="cn"></label><label>WhatsApp<input id="cp"></label><label>Endereço<input id="ce"></label><label>Bairro<select id="cb"><option value="">Selecione</option>${areas.map(a=>`<option value="${a.id}">${esc(a.nome)}</option>`).join("")}</select></label><label>Pagamento<select id="pay"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></label><label>Troco para<input id="troco" type="number" step=".01"></label><label>Observação<textarea id="obs"></textarea></label><button onclick="sendOrder()">CONFIRMAR</button>`;openM()}
-async function sendOrder(){let nome=cn.value.trim(),fone=cp.value.trim(),end=ce.value.trim(),bid=+cb.value;if(!nome||!fone||!end||!bid)return alert("Preencha nome, WhatsApp, endereço e bairro.");let b=areas.find(x=>x.id===bid),sub=cart.reduce((a,x)=>a+x.sub,0),tax=+b.taxa||0,total=sub+tax;let payload={p_cliente_nome:nome,p_telefone:fone,p_endereco:end,p_bairro_id:bid,p_pagamento:pay.value,p_troco_para:+troco.value||null,p_subtotal:sub,p_taxa_entrega:tax,p_total:total,p_observacao:obs.value,p_itens:cart.map(x=>({nome_produto:x.nome,produto_id:x.tipo==="p"?x.id:null,jantinha_id:x.tipo==="j"?x.id:null,tamanho:x.tamanho,quantidade:x.q,preco_unitario:x.unit,adicionais:x.adds.join(", "),subtotal:x.sub}))};try{let r=await rpc("criar_pedido",payload),id=Array.isArray(r)?r[0].pedido_id:r.pedido_id||r;alert("Pedido enviado! #"+id);window.open("https://wa.me/5527981115864?text="+encodeURIComponent("Olá! Fiz o pedido #"+id+" pelo site. Total: "+money(total)),"_blank");cart=[];closeM();renderCart()}catch(e){console.error(e);alert("Erro ao enviar. Execute o SQL 02_rpc_criar_pedido.sql e confira a Publishable Key.")}}
-function openM(){modal.classList.add("on")}function closeM(){modal.classList.remove("on")}start();
-</script></body></html>
+const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+
+async function rest(path, options={}){
+  const headers={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",...(options.headers||{})};
+  const r=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...options,headers});
+  if(!r.ok) throw new Error(await r.text());
+  const txt=await r.text();
+  return txt?JSON.parse(txt):null;
+}
+
+async function rpc(functionName, body){
+  const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+functionName,{
+    method:"POST",
+    headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return await r.json();
+}
+
+async function carregarSite(){
+  if(SUPABASE_KEY==="COLE_SUA_PUBLISHABLE_KEY_AQUI"){
+    alert("Coloque sua Publishable Key no index.html.");
+    return;
+  }
+  try{
+    const [p,j,a,b,c]=await Promise.all([
+      rest("produtos?select=*&disponivel=eq.true&order=id.asc"),
+      rest("jantinhas?select=*&disponivel=eq.true&order=id.asc"),
+      rest("adicionais?select=*&disponivel=eq.true&order=id.asc"),
+      rest("bairros?select=*&disponivel=eq.true&order=nome.asc"),
+      rest("configuracoes?select=chave,valor")
+    ]);
+    produtos=p||[]; jantinhas=j||[];
+    adicionais=(a||[]).filter(x=>["Bacon","Calabresa","Mussarela","Frango","Boi"].includes(x.nome));
+    bairros=b||[];
+    (c||[]).forEach(x=>configuracoes[x.chave]=x.valor);
+    document.getElementById("minimumLabel").textContent=money(Number(configuracoes.pedido_minimo||20));
+    render();
+  }catch(e){
+    console.error(e);
+    alert("Não foi possível carregar o cardápio. Confira a Publishable Key e o Supabase.");
+  }
+}
+
+function render(){
+  const macarrao=produtos.filter(p=>p.preco_g!=null);
+  const bebidas=produtos.filter(p=>p.preco_g==null);
+
+  document.getElementById("macarrao").innerHTML=macarrao.length
+    ? macarrao.map(p=>cardProduto(p,"produto",produtos.indexOf(p))).join("")
+    : '<div class="card">Nenhum macarrão disponível.</div>';
+
+  document.getElementById("jantinhas").innerHTML=jantinhas.length
+    ? jantinhas.map((p,i)=>cardProduto(p,"jantinha",i)).join("")
+    : '<div class="card">Nenhuma jantinha disponível.</div>';
+
+  document.getElementById("bebidas").innerHTML=bebidas.length
+    ? bebidas.map(p=>`<div class="card">
+        ${p.imagem_url?`<img src="${esc(p.imagem_url)}" alt="${esc(p.nome)}">`:""}
+        <h3>${esc(p.nome)}</h3>
+        <p class="muted">${esc(p.descricao||"")}</p>
+        <div class="price">${money(p.preco_p)}</div>
+        <button onclick="adicionarBebida(${produtos.indexOf(p)})">ADICIONAR</button>
+      </div>`).join("")
+    : '<div class="card">Nenhuma bebida disponível.</div>';
+
+  renderCarrinho();
+}
+
+function cardProduto(p,tipo,index){
+  return `<div class="card">
+    ${p.imagem_url?`<img src="${esc(p.imagem_url)}" alt="${esc(p.nome)}">`:""}
+    <h3>${esc(p.nome)}</h3>
+    <p class="muted">${esc(p.descricao||"")}</p>
+    <div class="price">P ${money(p.preco_p)} • G ${money(p.preco_g)}</div>
+    <button onclick="abrirProduto('${tipo}',${index})">ESCOLHER</button>
+  </div>`;
+}
+
+function abrirProduto(tipo,index){
+  itemAtual={tipo,index};
+  const p=tipo==="produto"?produtos[index]:jantinhas[index];
+  tamanhoSelecionado="P";
+  document.getElementById("modalContent").innerHTML=`
+    <h2>${esc(p.nome)}</h2>
+    <p>${esc(p.descricao||"")}</p>
+    <h3>Escolha o tamanho</h3>
+    <div class="choice">
+      <button id="btnP" class="sel" onclick="selecionarTamanho('P')">P — ${money(p.preco_p)}</button>
+      <button id="btnG" onclick="selecionarTamanho('G')">G — ${money(p.preco_g)}</button>
+    </div>
+    <h3>Adicionais</h3>
+    ${adicionais.length
+      ? adicionais.map((a,i)=>`<label><input class="addCheck" type="checkbox" value="${i}"> ${esc(a.nome)} (+${money(a.preco)})</label>`).join("")
+      : '<p class="muted">Sem adicionais disponíveis.</p>'}
+    <label>Quantidade<input id="qty" type="number" min="1" value="1"></label>
+    <button onclick="adicionarProduto()">ADICIONAR AO PEDIDO</button>`;
+  openModal();
+}
+
+function selecionarTamanho(t){
+  tamanhoSelecionado=t;
+  document.getElementById("btnP").classList.toggle("sel",t==="P");
+  document.getElementById("btnG").classList.toggle("sel",t==="G");
+}
+
+function adicionarProduto(){
+  const p=itemAtual.tipo==="produto"?produtos[itemAtual.index]:jantinhas[itemAtual.index];
+  const base=Number(tamanhoSelecionado==="P"?p.preco_p:p.preco_g);
+  const addsSel=[...document.querySelectorAll(".addCheck:checked")].map(x=>adicionais[Number(x.value)]);
+  const extra=addsSel.reduce((s,a)=>s+Number(a.preco),0);
+  const qty=Math.max(1,Number(document.getElementById("qty").value||1));
+  carrinho.push({
+    nome:p.nome,tipo:itemAtual.tipo,ref_id:p.id,tamanho:tamanhoSelecionado,
+    quantidade:qty,preco_unitario:base+extra,
+    adicionais:addsSel.map(a=>a.nome),subtotal:(base+extra)*qty
+  });
+  closeModal(); renderCarrinho();
+}
+
+function adicionarBebida(index){
+  const p=produtos[index];
+  carrinho.push({
+    nome:p.nome,tipo:"produto",ref_id:p.id,tamanho:null,quantidade:1,
+    preco_unitario:Number(p.preco_p),adicionais:[],subtotal:Number(p.preco_p)
+  });
+  renderCarrinho();
+}
+
+function renderCarrinho(){
+  const sub=carrinho.reduce((s,x)=>s+x.subtotal,0);
+  document.getElementById("subtotal").textContent=money(sub);
+  document.getElementById("cart").innerHTML=carrinho.length
+    ? carrinho.map((x,i)=>`<div class="cart-item">
+        <b>${x.quantidade}x ${esc(x.nome)} ${x.tamanho||""}</b><br>
+        <small>${x.adicionais.length?"Adicionais: "+esc(x.adicionais.join(", ")):""} ${x.adicionais.length?"• ":""}${money(x.subtotal)}</small>
+        <button class="gray" onclick="carrinho.splice(${i},1);renderCarrinho()">Remover</button>
+      </div>`).join("")
+    : "Seu carrinho está vazio.";
+}
+
+function showAreas(){
+  document.getElementById("modalContent").innerHTML=`
+    <h2>🚚 Bairros atendidos</h2>
+    <p>Pedido mínimo: <b>${money(Number(configuracoes.pedido_minimo||20))}</b></p>
+    ${bairros.map(b=>`<p>📍 <b>${esc(b.nome)}</b> — ${Number(b.taxa)?money(b.taxa):"taxa a confirmar"}</p>`).join("")}`;
+  openModal();
+}
+
+function checkout(){
+  const sub=carrinho.reduce((s,x)=>s+x.subtotal,0);
+  const minimo=Number(configuracoes.pedido_minimo||20);
+  if(!carrinho.length) return alert("Adicione pelo menos um item.");
+  if(sub<minimo) return alert("Pedido mínimo: "+money(minimo));
+
+  document.getElementById("modalContent").innerHTML=`
+    <h2>📋 Finalizar pedido</h2>
+    <div class="row">
+      <label>Nome<input id="cNome"></label>
+      <label>WhatsApp<input id="cTelefone"></label>
+    </div>
+    <label>Endereço<input id="cEndereco"></label>
+    <label>Bairro<select id="cBairro"><option value="">Selecione</option>${bairros.map(b=>`<option value="${b.id}">${esc(b.nome)}</option>`).join("")}</select></label>
+    <div class="row">
+      <label>Pagamento<select id="cPagamento"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></label>
+      <label>Troco para<input id="cTroco" type="number" step=".01"></label>
+    </div>
+    <label>Observação<textarea id="cObs" rows="3"></textarea></label>
+    <button class="green" onclick="enviarPedido()">CONFIRMAR PEDIDO</button>`;
+  openModal();
+}
+
+async function enviarPedido(){
+  const nome=document.getElementById("cNome").value.trim();
+  const telefone=document.getElementById("cTelefone").value.trim();
+  const endereco=document.getElementById("cEndereco").value.trim();
+  const bairroId=Number(document.getElementById("cBairro").value);
+  if(!nome||!telefone||!endereco||!bairroId) return alert("Preencha nome, WhatsApp, endereço e bairro.");
+
+  const bairro=bairros.find(b=>b.id===bairroId);
+  const subtotal=carrinho.reduce((s,x)=>s+x.subtotal,0);
+  const taxa=Number(bairro.taxa||0);
+  const total=subtotal+taxa;
+
+  const payload={
+    p_cliente_nome:nome,p_telefone:telefone,p_endereco:endereco,p_bairro_id:bairroId,
+    p_pagamento:document.getElementById("cPagamento").value,
+    p_troco_para:Number(document.getElementById("cTroco").value||0)||null,
+    p_subtotal:subtotal,p_taxa_entrega:taxa,p_total:total,
+    p_observacao:document.getElementById("cObs").value,
+    p_itens:carrinho.map(x=>({
+      nome_produto:x.nome,
+      produto_id:x.tipo==="produto"?x.ref_id:null,
+      jantinha_id:x.tipo==="jantinha"?x.ref_id:null,
+      tamanho:x.tamanho,quantidade:x.quantidade,
+      preco_unitario:x.preco_unitario,
+      adicionais:x.adicionais.join(", "),subtotal:x.subtotal
+    }))
+  };
+
+  try{
+    const result=await rpc("criar_pedido",payload);
+    const pedidoId=Array.isArray(result)?result[0]?.pedido_id:result?.pedido_id||result;
+    alert("Pedido enviado com sucesso! Pedido #"+pedidoId);
+    const msg=`Olá! Fiz o pedido #${pedidoId} pelo site Na Chapa. Total: ${money(total)}`;
+    carrinho=[]; closeModal(); renderCarrinho();
+    window.open("https://wa.me/5527981115864?text="+encodeURIComponent(msg),"_blank");
+  }catch(e){
+    console.error(e);
+    alert("Não foi possível enviar o pedido. Confira o Supabase.");
+  }
+}
+
+async function rpc(functionName, body){
+  const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+functionName,{
+    method:"POST",
+    headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return await r.json();
+}
+
+function openModal(){document.getElementById("modal").classList.add("on")}
+function closeModal(){document.getElementById("modal").classList.remove("on")}
+carregarSite();
+</script>
+</body>
+</html>
