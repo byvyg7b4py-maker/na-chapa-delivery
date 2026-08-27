@@ -281,10 +281,28 @@ async function enviarPedido(){
   try{
     const result=await rpc("criar_pedido",payload);
     const pedidoId=Array.isArray(result)?result[0]?.pedido_id:result?.pedido_id||result;
-    alert("Pedido enviado com sucesso! Pedido #"+pedidoId);
-    const msg=`Olá! Fiz o pedido #${pedidoId} pelo site Na Chapa. Total: ${money(total)}`;
-    carrinho=[]; closeModal(); renderCarrinho();
-    window.open("https://wa.me/5527981115864?text="+encodeURIComponent(msg),"_blank");
+    const msg=`Olá! Fiz o pedido #${pedidoId} pelo site Na Chapa e gostaria de acompanhar meu pedido. Total: ${money(total)}`;
+    carrinho=[]; renderCarrinho();
+
+    document.getElementById("modalContent").innerHTML=`
+      <div style="text-align:center;padding:10px 0">
+        <div style="font-size:44px">✅</div>
+        <h2>Pedido recebido!</h2>
+        <p>Seu pedido é o <b>#${pedidoId}</b>.</p>
+        <p>Total: <b>${money(total)}</b></p>
+        <p class="muted">Seu pedido já foi enviado para o Na Chapa.</p>
+        <button class="green" style="width:100%;margin-top:8px">
+          📲 ACOMPANHAR PEDIDO NO WHATSAPP
+        </button>
+        <button class="gray" style="width:100%;margin-top:8px" onclick="closeModal()">
+          FECHAR
+        </button>
+      </div>`;
+
+    const btn = document.querySelector("#modalContent .green");
+    if(btn){
+      btn.onclick = () => window.open("https://wa.me/5527981115864?text="+encodeURIComponent(msg),"_blank");
+    }
   }catch(e){
     console.error(e);
     alert("Não foi possível enviar o pedido. Confira o Supabase.");
