@@ -27,7 +27,7 @@ footer{text-align:center;color:#aaa;padding:28px 15px}
 <body>
 <header>
   <div class="logo">NA <span>CHAPA</span></div>
-  <div>MACARRÃO DELIVERY • JANTINHA NA CHAPA</div>
+  <div>MACARRÃO DELIVERY • JANTINHA • PÃO NA CHAPA</div>
   <div style="margin-top:6px">📲 27 98111-5864</div>
 </header>
 
@@ -45,6 +45,10 @@ footer{text-align:center;color:#aaa;padding:28px 15px}
   <h2>🍽️ Jantinha na Chapa</h2>
   <p class="muted section-note">Acompanhamentos: arroz + tropeiro/farofa + batata frita + vinagrete. Adicionais opcionais.</p>
   <div id="jantinhas" class="grid"></div>
+
+  <h2>🥖 Pão na Chapa</h2>
+  <p class="muted section-note">Escolha seu pão e marque os adicionais que desejar. A partir de R$ 16,00.</p>
+  <div id="paes" class="grid"></div>
 
   <h2>🥤 Bebidas</h2>
   <p class="muted section-note">Bebidas são adicionadas direto ao carrinho, sem adicionais.</p>
@@ -71,7 +75,7 @@ footer{text-align:center;color:#aaa;padding:28px 15px}
 const SUPABASE_URL = "https://jadruovvzvubiujoyfgx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_SgIXosTtTVDGlheKBr73zg_llUnfrhp";
 
-let produtos=[], jantinhas=[], adicionais=[], bairros=[], configuracoes={};
+let produtos=[], jantinhas=[], adicionais=[], paoAdicionais=[], bairros=[], configuracoes={};
 let carrinho=[];
 let tamanhoSelecionado="P";
 let itemAtual=null;
@@ -103,14 +107,15 @@ async function carregarSite(){
     return;
   }
   try{
-    const [p,j,a,b,c]=await Promise.all([
+    const [p,j,a,b,c,pa]=await Promise.all([
       rest("produtos?select=*&disponivel=eq.true&order=id.asc"),
       rest("jantinhas?select=*&disponivel=eq.true&order=id.asc"),
       rest("adicionais?select=*&disponivel=eq.true&order=id.asc"),
       rest("bairros?select=*&disponivel=eq.true&order=nome.asc"),
-      rest("configuracoes?select=chave,valor")
+      rest("configuracoes?select=chave,valor"),
+       rest("pao_adicionais?select=*&disponivel=eq.true&order=id.asc")
     ]);
-    produtos=p||[]; jantinhas=j||[];
+    produtos=p||[]; jantinhas=j||[]; paoAdicionais=pa||[];
     adicionais=(a||[]).filter(x=>["Bacon","Calabresa","Mussarela","Frango","Boi"].includes(x.nome));
     bairros=b||[];
     (c||[]).forEach(x=>configuracoes[x.chave]=x.valor);
@@ -123,8 +128,9 @@ async function carregarSite(){
 }
 
 function render(){
-  const macarrao=produtos.filter(p=>p.preco_g!=null);
-  const bebidas=produtos.filter(p=>p.preco_g==null);
+  const macarrao=produtos.filter(p=>p.categoria!=="pao" && p.preco_g!=null);
+   const paes=produtos.filter(p=>p.categoria==="pao");
+  const bebidas=produtos.filter(p=>p.categoria!=="pao" && p.preco_g==null);
 
   document.getElementById("macarrao").innerHTML=macarrao.length
     ? macarrao.map(p=>cardProduto(p,"produto",produtos.indexOf(p))).join("")
@@ -176,6 +182,41 @@ function abrirProduto(tipo,index){
     <label>Quantidade<input id="qty" type="number" min="1" value="1"></label>
     <button onclick="adicionarProduto()">ADICIONAR AO PEDIDO</button>`;
   openModal();
+}
+
+
+function abrirPao(index){
+  const p=produtos[index];
+  itemAtual={tipo:"pao",index};
+  document.getElementById("modalContent").innerHTML=`
+    <h2>${esc(p.nome)}</h2>
+    <p>${esc(p.descricao||"")}</p>
+    <div class="price">Preço: ${money(p.preco_p)}</div>
+    <h3>Adicionais opcionais</h3>
+    ${paoAdicionais.map((a,i)=>`<label><input class="paoAddCheck" type="checkbox" value="${i}" onchange="atualizarTotalPao()"> ${esc(a.nome)} (+${money(a.preco)})</label>`).join("")}
+    <label>Quantidade<input id="qtyPao" type="number" min="1" max="99" value="1" oninput="atualizarTotalPao()"></label>
+    <div class="price">Total: <span id="totalPao">${money(p.preco_p)}</span></div>
+    <button onclick="adicionarPao()">ADICIONAR AO PEDIDO</button>`;
+  openModal();
+}
+function adicionaisPaoSelecionados(){
+  return [...document.querySelectorAll(".paoAddCheck:checked")].map(el=>paoAdicionais[Number(el.value)]);
+}
+function atualizarTotalPao(){
+  const p=produtos[itemAtual.index];
+  const extras=adicionaisPaoSelecionados().reduce((s,a)=>s+Number(a.preco),0);
+  const qty=Math.min(99,Math.max(1,Math.floor(Number(document.getElementById("qtyPao").value)||1)));
+  document.getElementById("totalPao").textContent=money((Number(p.preco_p)+extras)*qty);
+}
+function adicionarPao(){
+  const p=produtos[itemAtual.index];
+  const adds=adicionaisPaoSelecionados();
+  const qty=Math.min(99,Math.max(1,Math.floor(Number(document.getElementById("qtyPao").value)||1)));
+  const preco=Number(p.preco_p)+adds.reduce((s,a)=>s+Number(a.preco),0);
+  carrinho.push({nome:p.nome,tipo:"produto",ref_id:p.id,tamanho:null,
+    quantidade:qty,preco_unitario:preco,adicionais:adds.map(a=>a.nome),
+    subtotal:preco*qty});
+  closeModal();renderCarrinho();
 }
 
 function selecionarTamanho(t){
