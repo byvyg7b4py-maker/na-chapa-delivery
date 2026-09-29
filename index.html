@@ -140,6 +140,16 @@ function render(){
     ? jantinhas.map((p,i)=>cardProduto(p,"jantinha",i)).join("")
     : '<div class="card">Nenhuma jantinha disponível.</div>';
 
+  document.getElementById("paes").innerHTML=paes.length
+    ? paes.map(p=>`<div class="card">
+        ${p.imagem_url?`<img src="${esc(p.imagem_url)}" alt="${esc(p.nome)}">`:""}
+        <h3>${esc(p.nome)}</h3>
+        <p class="muted">${esc(p.descricao||"")}</p>
+        <div class="price">${money(p.preco_p)}</div>
+        <button onclick="abrirPao(${produtos.indexOf(p)})">ESCOLHER</button>
+      </div>`).join("")
+    : '<div class="card">Nenhum pão disponível.</div>';
+
   document.getElementById("bebidas").innerHTML=bebidas.length
     ? bebidas.map(p=>`<div class="card">
         ${p.imagem_url?`<img src="${esc(p.imagem_url)}" alt="${esc(p.nome)}">`:""}
