@@ -43,7 +43,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 <button onclick="showTab('pedidos')">📋 Pedidos</button>
 <button onclick="showTab('produtos')">🍝 Produtos</button>
 <button onclick="showTab('jantinhas')">🍽️ Jantinhas</button>
+<button onclick="showTab('paes')">🥖 Pães na Chapa</button>
 <button onclick="showTab('adicionais')">➕ Adicionais</button>
+<button onclick="showTab('extrasPao')">🥖 Extras dos pães</button>
 <button onclick="showTab('bairros')">🚚 Bairros</button>
 <button onclick="showTab('config')">⚙️ Configurações</button>
 </nav>
@@ -80,6 +82,14 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
   </div>
 </section>
 
+<section id="paes" class="tab">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🥖 Pães na Chapa</h2><button onclick="openProductForm('paes',-1)">➕ Novo pão</button></div>
+    <p class="muted">Cadastre frango, carne bovina e porco a R$ 16,00. O site do cliente também precisa da atualização para exibir esta categoria.</p>
+    <div class="grid" id="paesGrid"></div>
+  </div>
+</section>
+
 <section id="jantinhas" class="tab">
   <div class="panel">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🍽️ Jantinhas</h2><button onclick="openProductForm('jantinhas',-1)">➕ Nova</button></div>
@@ -94,6 +104,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
   </div>
 </section>
 
+<section id="extrasPao" class="tab"><div class="panel"><h2>🥖 Adicionais exclusivos do Pão na Chapa</h2><button onclick="abrirExtraPao(-1)">➕ Novo adicional</button><div id="extrasPaoLista" class="grid" style="margin-top:12px"></div></div></section>
 <section id="bairros" class="tab">
   <div class="panel">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🚚 Bairros e taxas</h2><button onclick="openAreaForm(-1)">➕ Novo bairro</button></div>
@@ -122,7 +133,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 const SUPABASE_URL="https://jadruovvzvubiujoyfgx.supabase.co";
 const SUPABASE_KEY="sb_publishable_SgIXosTtTVDGlheKBr73zg_llUnfrhp";
 let token=localStorage.getItem("nc_admin_token")||"";
-let produtos=[],jantinhas=[],adicionais=[],bairros=[],configuracoes={},pedidos=[],itensPedido=[];
+let extrasPao=[],paes=[],produtos=[],jantinhas=[],adicionais=[],bairros=[],configuracoes={},pedidos=[],itensPedido=[];
 
 const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
@@ -163,14 +174,15 @@ function closeModal(){modal.classList.remove("on")}
 
 async function loadAll(){
   try{
-    const [p,j,a,b,c]=await Promise.all([
+    const [p,j,a,b,c,ep]=await Promise.all([
       rest("produtos?select=*&order=id.asc"),
       rest("jantinhas?select=*&order=id.asc"),
       rest("adicionais?select=*&order=id.asc"),
       rest("bairros?select=*&order=nome.asc"),
-      rest("configuracoes?select=*")
+      rest("configuracoes?select=*"),
+       rest("pao_adicionais?select=*&order=id.asc")
     ]);
-    produtos=p||[]; jantinhas=j||[]; adicionais=a||[]; bairros=b||[];
+    produtos=(p||[]).filter(x=>x.categoria!=='pao'); paes=(p||[]).filter(x=>x.categoria==='pao'); jantinhas=j||[]; adicionais=a||[]; extrasPao=ep||[]; bairros=b||[];
     configuracoes={}; (c||[]).forEach(x=>configuracoes[x.chave]=x.valor);
     await loadOrders();
     renderAll();
@@ -190,7 +202,7 @@ async function loadOrders(){
 }
 
 function renderAll(){
-  renderProducts(); renderJantinhas(); renderAdds(); renderAreas(); renderConfig(); renderStats(); renderOrders();
+  renderProducts(); renderExtrasPao(); renderPaes(); renderJantinhas(); renderAdds(); renderAreas(); renderConfig(); renderStats(); renderOrders();
 }
 function renderStats(){
   statOrders.textContent=pedidos.length;
@@ -232,6 +244,14 @@ function renderProducts(){
     <td>${p.disponivel?"✅":"❌"}</td>
     <td><button onclick="openProductForm('produtos',${i})">✏️ Editar</button></td></tr>`).join("");
 }
+function renderPaes(){
+  paesGrid.innerHTML=paes.length?paes.map((p,i)=>`<div class="card">
+    ${p.imagem_url?`<img class="thumb" src="${esc(p.imagem_url)}">`:"📷"}
+    <h3>${esc(p.nome)}</h3><p>${esc(p.descricao||"")}</p>
+    <b>${money(p.preco_p)}</b><br><span class="badge">${p.disponivel?"Disponível":"Indisponível"}</span><br><br>
+    <button onclick="openProductForm('paes',${i})">✏️ Editar</button>
+  </div>`).join(""):'<p class="muted">Nenhum pão cadastrado.</p>';
+}
 function renderJantinhas(){
   jantinhasGrid.innerHTML=jantinhas.map((p,i)=>`<div class="card">
     ${p.imagem_url?`<img class="thumb" src="${esc(p.imagem_url)}">`:"📷"}
@@ -242,13 +262,14 @@ function renderJantinhas(){
   </div>`).join("");
 }
 function openProductForm(type,index){
-  const list=type==="produtos"?produtos:jantinhas;
-  const p=index>=0?list[index]:{nome:"",descricao:"",preco_p:0,preco_g:null,imagem_url:"",disponivel:true};
-  openModal(`<h2>${index>=0?"✏️ Editar":"➕ Novo"} ${type==="jantinhas"?"jantinha":"produto"}</h2>
+  const list=type==="produtos"?produtos:type==="paes"?paes:jantinhas;
+  const p=index>=0?list[index]:{nome:"",descricao:type==="paes"?"Pão francês, proteína, vinagrete, mussarela e molho da casa.":"",preco_p:type==="paes"?16:0,preco_g:null,imagem_url:"",disponivel:true};
+  openModal(`<h2>${index>=0?"✏️ Editar":"➕ Novo"} ${type==="jantinhas"?"jantinha":type==="paes"?"pão":"produto"}</h2>
     <label>Nome<input id="fNome" value="${esc(p.nome)}"></label>
     <label>Descrição<textarea id="fDesc">${esc(p.descricao||"")}</textarea></label>
     <div class="row"><label>Preço P / preço único<input id="fP" type="number" step=".01" value="${p.preco_p??0}"></label>
     <label>Preço G (deixe vazio para bebida/preço único)<input id="fG" type="number" step=".01" value="${p.preco_g??""}"></label></div>
+    ${type==="paes"?`<p class="muted">Preço único: deixe o campo G vazio.</p>`:""}
     <label>Imagem atual / URL<input id="fImg" value="${esc(p.imagem_url||"")}"></label>
     <label>Ou escolher foto do notebook<input id="fFile" type="file" accept="image/*"></label>
     <label><input id="fDisponivel" type="checkbox" ${p.disponivel?"checked":""}> Disponível no site</label>
@@ -268,12 +289,14 @@ async function uploadImage(file){
 }
 async function saveProduct(type,index){
   try{
-    const list=type==="produtos"?produtos:jantinhas;
+    const list=type==="produtos"?produtos:type==="paes"?paes:jantinhas;
     const current=index>=0?list[index]:null;
     let img=fImg.value.trim();
     if(fFile.files[0]) img=await uploadImage(fFile.files[0]);
-    const body={nome:fNome.value.trim(),descricao:fDesc.value.trim(),preco_p:Number(fP.value||0),preco_g:fG.value===""?null:Number(fG.value),imagem_url:img||null,disponivel:fDisponivel.checked,atualizado_em:new Date().toISOString()};
-    const table=type;
+    const body={nome:fNome.value.trim(),descricao:fDesc.value.trim(),preco_p:Number(fP.value||0),preco_g:type==="paes"?null:fG.value===""?null:Number(fG.value),imagem_url:img||null,disponivel:fDisponivel.checked,atualizado_em:new Date().toISOString()};
+    if(type==="paes") body.categoria="pao";
+    else if(type==="produtos" && !current) body.categoria="geral";
+    const table=type==="paes"?"produtos":type;
     if(index>=0){
       await rest(`${table}?id=eq.${current.id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
     }else{
@@ -297,6 +320,28 @@ async function saveAdd(i){
     else await rest("adicionais",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
     closeModal(); await loadAll();
   }catch(e){console.error(e);alert("Erro ao salvar adicional.")}
+}
+
+
+function renderExtrasPao(){
+  extrasPaoLista.innerHTML=extrasPao.map((e,i)=>`<div class="card"><b>${esc(e.nome)}</b><p>${money(e.preco)}</p><p>${e.disponivel?"Disponível":"Indisponível"}</p><button onclick="abrirExtraPao(${i})">✏️ Editar</button></div>`).join("");
+}
+function abrirExtraPao(i){
+  const e=i<0?{nome:"",preco:0,disponivel:true}:extrasPao[i];
+  openModal(`<h2>Adicional do Pão na Chapa</h2>
+    <label>Nome<input id="extraPaoNome" value="${esc(e.nome)}"></label>
+    <label>Preço<input id="extraPaoPreco" type="number" step=".01" min="0" value="${e.preco}"></label>
+    <label><input id="extraPaoDisponivel" type="checkbox" ${e.disponivel?"checked":""}> Disponível</label>
+    <button class="green" onclick="salvarExtraPao(${i})">SALVAR</button>`);
+}
+async function salvarExtraPao(i){
+  try{
+    const body={nome:extraPaoNome.value.trim(),preco:Number(extraPaoPreco.value),disponivel:extraPaoDisponivel.checked};
+    if(!body.nome||!Number.isFinite(body.preco)||body.preco<0) return alert("Informe nome e preço válido.");
+    if(i<0) await rest("pao_adicionais",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    else await rest(`pao_adicionais?id=eq.${extrasPao[i].id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    closeModal();await loadAll();
+  }catch(e){console.error(e);alert("Erro ao salvar adicional do pão.")}
 }
 
 function renderAreas(){
