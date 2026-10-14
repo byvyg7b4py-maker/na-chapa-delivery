@@ -41,11 +41,12 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 <nav>
 <button onclick="showTab('dashboard')">📊 Visão geral</button>
 <button onclick="showTab('pedidos')">📋 Pedidos</button>
-<button onclick="showTab('produtos')">🍝 Produtos</button>
+<button onclick="showTab('macarroes')">🍝 Macarrões</button><button onclick="showTab('bebidas')">🥤 Bebidas</button><button onclick="showTab('lanches')">🍔 Lanches</button>
 <button onclick="showTab('jantinhas')">🍽️ Jantinhas</button>
 <button onclick="showTab('paes')">🥖 Pães na Chapa</button>
 <button onclick="showTab('adicionais')">➕ Adicionais</button>
 <button onclick="showTab('extrasPao')">🥖 Extras dos pães</button>
+<button onclick="showTab('extrasLanche')">🍔 Extras dos lanches</button>
 <button onclick="showTab('bairros')">🚚 Bairros</button>
 <button onclick="showTab('config')">⚙️ Configurações</button>
 </nav>
@@ -59,7 +60,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
   </div>
   <div class="panel" style="margin-top:14px">
     <h2>✅ ADM conectado ao Supabase</h2>
-    <p>As alterações feitas aqui vão para o banco. O site dos clientes lê o mesmo banco.</p>
+    <p>As alterações feitas aqui vão para o banco. Para mostrar as novas categorias corretamente aos clientes, atualize também o index.html.</p>
     <p class="muted">Os pedidos são atualizados automaticamente a cada 10 segundos enquanto esta página estiver aberta.</p>
   </div>
 </section>
@@ -75,13 +76,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
   </div>
 </section>
 
-<section id="produtos" class="tab">
-  <div class="panel">
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🍝 Produtos / bebidas</h2><button onclick="openProductForm('produtos',-1)">➕ Novo</button></div>
-    <div style="overflow:auto"><table><thead><tr><th>Foto</th><th>Produto</th><th>P/preço</th><th>G</th><th>Disponível</th><th></th></tr></thead><tbody id="productsTable"></tbody></table></div>
-  </div>
-</section>
-
+<section id="macarroes" class="tab"><div class="panel"><div class="toolbar"><h2>🍝 Macarrões</h2><button onclick="openProductForm('macarroes',-1)">➕ Novo macarrão</button></div><div style="overflow:auto"><table><thead><tr><th>Foto</th><th>Produto</th><th>P/preço</th><th>G</th><th>Disponível</th><th></th></tr></thead><tbody id="macarroesTable"></tbody></table></div></div></section>
+<section id="bebidas" class="tab"><div class="panel"><div class="toolbar"><h2>🥤 Bebidas</h2><button onclick="openProductForm('bebidas',-1)">➕ Nova bebida</button></div><div style="overflow:auto"><table><thead><tr><th>Foto</th><th>Produto</th><th>Preço</th><th>G</th><th>Disponível</th><th></th></tr></thead><tbody id="bebidasTable"></tbody></table></div></div></section>
+<section id="lanches" class="tab"><div class="panel"><div class="toolbar"><h2>🍔 Lanches</h2><button onclick="openProductForm('lanches',-1)">➕ Novo lanche</button></div><p class="muted">Preços dos lanches ainda provisórios. Cadastre os cinco itens abaixo pelo botão Novo lanche; os itens não são criados automaticamente.</p><div style="overflow:auto"><table><thead><tr><th>Foto</th><th>Produto</th><th>Preço</th><th>G</th><th>Disponível</th><th></th></tr></thead><tbody id="lanchesTable"></tbody></table></div></div></section>
 <section id="paes" class="tab">
   <div class="panel">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>🥖 Pães na Chapa</h2><button onclick="openProductForm('paes',-1)">➕ Novo pão</button></div>
@@ -104,6 +101,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
   </div>
 </section>
 
+<section id="extrasLanche" class="tab"><div class="panel"><h2>🍔 Adicionais exclusivos dos Lanches</h2><button onclick="abrirExtraLanche(-1)">➕ Novo adicional</button><div id="extrasLancheLista" class="grid" style="margin-top:12px"></div></div></section>
 <section id="extrasPao" class="tab"><div class="panel"><h2>🥖 Adicionais exclusivos do Pão na Chapa</h2><button onclick="abrirExtraPao(-1)">➕ Novo adicional</button><div id="extrasPaoLista" class="grid" style="margin-top:12px"></div></div></section>
 <section id="bairros" class="tab">
   <div class="panel">
@@ -133,7 +131,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 const SUPABASE_URL="https://jadruovvzvubiujoyfgx.supabase.co";
 const SUPABASE_KEY="sb_publishable_SgIXosTtTVDGlheKBr73zg_llUnfrhp";
 let token=localStorage.getItem("nc_admin_token")||"";
-let extrasPao=[],paes=[],produtos=[],jantinhas=[],adicionais=[],bairros=[],configuracoes={},pedidos=[],itensPedido=[];
+let extrasLanche=[],extrasPao=[],paes=[],produtos=[],macarroes=[],bebidas=[],lanches=[],jantinhas=[],adicionais=[],bairros=[],configuracoes={},pedidos=[],itensPedido=[];
 
 const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
@@ -174,15 +172,25 @@ function closeModal(){modal.classList.remove("on")}
 
 async function loadAll(){
   try{
-    const [p,j,a,b,c,ep]=await Promise.all([
+    const [p,j,a,b,c,ep,el]=await Promise.all([
       rest("produtos?select=*&order=id.asc"),
       rest("jantinhas?select=*&order=id.asc"),
       rest("adicionais?select=*&order=id.asc"),
       rest("bairros?select=*&order=nome.asc"),
       rest("configuracoes?select=*"),
-       rest("pao_adicionais?select=*&order=id.asc")
+       rest("pao_adicionais?select=*&order=id.asc"),
+      rest("lanche_adicionais?select=*&order=id.asc")
     ]);
-    produtos=(p||[]).filter(x=>x.categoria!=='pao'); paes=(p||[]).filter(x=>x.categoria==='pao'); jantinhas=j||[]; adicionais=a||[]; extrasPao=ep||[]; bairros=b||[];
+    produtos=p||[];
+    const categoriaVisual=x=>{
+      if(x.categoria==='pao') return 'pao';
+      if(['macarrao','macarroes','bebida','bebidas','lanche','lanches'].includes(x.categoria)) return ({macarrao:'macarrao',macarroes:'macarrao',bebida:'bebida',bebidas:'bebida',lanche:'lanche',lanches:'lanche'})[x.categoria];
+      // Compatibilidade com produtos antigos cadastrados como 'geral'.
+      return /refrigerante|coca.?cola|guaran[aá]|fanta|suco|[aá]gua|juninho|sprite|pepsi|bebida/i.test(x.nome||'')?'bebida':'macarrao';
+    };
+    paes=produtos.filter(x=>categoriaVisual(x)==='pao');
+    macarroes=produtos.filter(x=>categoriaVisual(x)==='macarrao'); bebidas=produtos.filter(x=>categoriaVisual(x)==='bebida'); lanches=produtos.filter(x=>categoriaVisual(x)==='lanche');
+     jantinhas=j||[]; adicionais=a||[]; extrasPao=ep||[]; extrasLanche=el||[]; bairros=b||[];
     configuracoes={}; (c||[]).forEach(x=>configuracoes[x.chave]=x.valor);
     await loadOrders();
     renderAll();
@@ -202,7 +210,7 @@ async function loadOrders(){
 }
 
 function renderAll(){
-  renderProducts(); renderExtrasPao(); renderPaes(); renderJantinhas(); renderAdds(); renderAreas(); renderConfig(); renderStats(); renderOrders();
+  renderProducts(); renderExtrasPao(); renderExtrasLanche(); renderPaes(); renderJantinhas(); renderAdds(); renderAreas(); renderConfig(); renderStats(); renderOrders();
 }
 function renderStats(){
   statOrders.textContent=pedidos.length;
@@ -237,12 +245,14 @@ async function updateStatus(id,status){
 }
 
 function renderProducts(){
-  productsTable.innerHTML=produtos.map((p,i)=>`<tr>
-    <td>${p.imagem_url?`<img class="thumb" src="${esc(p.imagem_url)}">`:"📷"}</td>
-    <td><b>${esc(p.nome)}</b><br><span class="muted">${esc(p.descricao||"")}</span></td>
-    <td>${money(p.preco_p)}</td><td>${p.preco_g==null?"—":money(p.preco_g)}</td>
-    <td>${p.disponivel?"✅":"❌"}</td>
-    <td><button onclick="openProductForm('produtos',${i})">✏️ Editar</button></td></tr>`).join("");
+  for(const [type,list,element] of [['macarroes',macarroes,macarroesTable],['bebidas',bebidas,bebidasTable],['lanches',lanches,lanchesTable]]){
+    element.innerHTML=list.length?list.map((p,i)=>`<tr>
+      <td>${p.imagem_url?`<img class="thumb" src="${esc(p.imagem_url)}">`:'📷'}</td>
+      <td><b>${esc(p.nome)}</b><br><span class="muted">${esc(p.descricao||'')}</span></td>
+      <td>${money(p.preco_p)}</td><td>${p.preco_g==null?'—':money(p.preco_g)}</td>
+      <td>${p.disponivel?'✅':'❌'}</td>
+      <td><button onclick="openProductForm('${type}',${i})">✏️ Editar</button></td></tr>`).join(''):'<tr><td colspan="6" class="muted">Nenhum item cadastrado nesta categoria.</td></tr>';
+  }
 }
 function renderPaes(){
   paesGrid.innerHTML=paes.length?paes.map((p,i)=>`<div class="card">
@@ -262,9 +272,9 @@ function renderJantinhas(){
   </div>`).join("");
 }
 function openProductForm(type,index){
-  const list=type==="produtos"?produtos:type==="paes"?paes:jantinhas;
+  const list=({macarroes,bebidas,lanches,paes,jantinhas})[type];
   const p=index>=0?list[index]:{nome:"",descricao:type==="paes"?"Pão francês, proteína, vinagrete, mussarela e molho da casa.":"",preco_p:type==="paes"?16:0,preco_g:null,imagem_url:"",disponivel:true};
-  openModal(`<h2>${index>=0?"✏️ Editar":"➕ Novo"} ${type==="jantinhas"?"jantinha":type==="paes"?"pão":"produto"}</h2>
+  openModal(`<h2>${index>=0?"✏️ Editar":"➕ Novo"} ${type==="jantinhas"?"jantinha":type==="paes"?"pão":type==="bebidas"?"bebida":type==="lanches"?"lanche":"macarrão"}</h2>
     <label>Nome<input id="fNome" value="${esc(p.nome)}"></label>
     <label>Descrição<textarea id="fDesc">${esc(p.descricao||"")}</textarea></label>
     <div class="row"><label>Preço P / preço único<input id="fP" type="number" step=".01" value="${p.preco_p??0}"></label>
@@ -289,14 +299,13 @@ async function uploadImage(file){
 }
 async function saveProduct(type,index){
   try{
-    const list=type==="produtos"?produtos:type==="paes"?paes:jantinhas;
+    const list=({macarroes,bebidas,lanches,paes,jantinhas})[type];
     const current=index>=0?list[index]:null;
     let img=fImg.value.trim();
     if(fFile.files[0]) img=await uploadImage(fFile.files[0]);
-    const body={nome:fNome.value.trim(),descricao:fDesc.value.trim(),preco_p:Number(fP.value||0),preco_g:type==="paes"?null:fG.value===""?null:Number(fG.value),imagem_url:img||null,disponivel:fDisponivel.checked,atualizado_em:new Date().toISOString()};
-    if(type==="paes") body.categoria="pao";
-    else if(type==="produtos" && !current) body.categoria="geral";
-    const table=type==="paes"?"produtos":type;
+    const body={nome:fNome.value.trim(),descricao:fDesc.value.trim(),preco_p:Number(fP.value||0),preco_g:["paes","bebidas","lanches"].includes(type)?null:fG.value===""?null:Number(fG.value),imagem_url:img||null,disponivel:fDisponivel.checked,atualizado_em:new Date().toISOString()};
+    if(type!=="jantinhas") body.categoria=({paes:"pao",macarroes:"macarrao",bebidas:"bebida",lanches:"lanche"})[type];
+    const table=type==="jantinhas"?"jantinhas":"produtos";
     if(index>=0){
       await rest(`${table}?id=eq.${current.id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
     }else{
@@ -322,6 +331,23 @@ async function saveAdd(i){
   }catch(e){console.error(e);alert("Erro ao salvar adicional.")}
 }
 
+
+function renderExtrasLanche(){
+  extrasLancheLista.innerHTML=extrasLanche.map((e,i)=>`<div class="card"><b>${esc(e.nome)}</b><p>${money(e.preco)}</p><p>${e.disponivel?"Disponível":"Indisponível"}</p><button onclick="abrirExtraLanche(${i})">✏️ Editar</button></div>`).join("") || '<p class="muted">Nenhum adicional cadastrado.</p>';
+}
+function abrirExtraLanche(i){
+  const e=i<0?{nome:"",preco:0,disponivel:true}:extrasLanche[i];
+  openModal(`<h2>Adicional dos Lanches</h2><label>Nome<input id="extraLancheNome" value="${esc(e.nome)}"></label><label>Preço<input id="extraLanchePreco" type="number" step=".01" min="0" value="${e.preco}"></label><label><input id="extraLancheDisponivel" type="checkbox" ${e.disponivel?"checked":""}> Disponível</label><button class="green" onclick="salvarExtraLanche(${i})">SALVAR</button>`);
+}
+async function salvarExtraLanche(i){
+  try{
+    const body={nome:extraLancheNome.value.trim(),preco:Number(extraLanchePreco.value),disponivel:extraLancheDisponivel.checked};
+    if(!body.nome||!Number.isFinite(body.preco)||body.preco<0) return alert("Informe nome e preço válido.");
+    if(i<0) await rest("lanche_adicionais",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    else await rest(`lanche_adicionais?id=eq.${extrasLanche[i].id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+    closeModal();await loadAll();
+  }catch(e){console.error(e);alert("Erro ao salvar adicional do lanche.")}
+}
 
 function renderExtrasPao(){
   extrasPaoLista.innerHTML=extrasPao.map((e,i)=>`<div class="card"><b>${esc(e.nome)}</b><p>${money(e.preco)}</p><p>${e.disponivel?"Disponível":"Indisponível"}</p><button onclick="abrirExtraPao(${i})">✏️ Editar</button></div>`).join("");
