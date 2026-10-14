@@ -27,7 +27,7 @@ footer{text-align:center;color:#aaa;padding:28px 15px}
 <body>
 <header>
   <div class="logo">NA <span>CHAPA</span></div>
-  <div>MACARRÃO DELIVERY • JANTINHA • PÃO NA CHAPA</div>
+  <div>MACARRÕES • JANTINHAS • PÃO NA CHAPA • LANCHES • BEBIDAS</div>
   <div style="margin-top:6px">📲 27 98111-5864</div>
 </header>
 
@@ -49,6 +49,10 @@ footer{text-align:center;color:#aaa;padding:28px 15px}
   <h2>🥖 Pão na Chapa</h2>
   <p class="muted section-note">Escolha seu pão e marque os adicionais que desejar. A partir de R$ 16,00.</p>
   <div id="paes" class="grid"></div>
+
+  <h2>🍔 Lanches</h2>
+  <p class="muted section-note">Hambúrgueres tradicionais da Na Chapa. Preços provisórios.</p>
+  <div id="lanches" class="grid"></div>
 
   <h2>🥤 Bebidas</h2>
   <p class="muted section-note">Bebidas são adicionadas direto ao carrinho, sem adicionais.</p>
@@ -75,7 +79,7 @@ footer{text-align:center;color:#aaa;padding:28px 15px}
 const SUPABASE_URL = "https://jadruovvzvubiujoyfgx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_SgIXosTtTVDGlheKBr73zg_llUnfrhp";
 
-let produtos=[], jantinhas=[], adicionais=[], paoAdicionais=[], bairros=[], configuracoes={};
+let produtos=[], jantinhas=[], adicionais=[], paoAdicionais=[], lancheAdicionais=[], bairros=[], configuracoes={};
 let carrinho=[];
 let tamanhoSelecionado="P";
 let itemAtual=null;
@@ -107,15 +111,16 @@ async function carregarSite(){
     return;
   }
   try{
-    const [p,j,a,b,c,pa]=await Promise.all([
+    const [p,j,a,b,c,pa,la]=await Promise.all([
       rest("produtos?select=*&disponivel=eq.true&order=id.asc"),
       rest("jantinhas?select=*&disponivel=eq.true&order=id.asc"),
       rest("adicionais?select=*&disponivel=eq.true&order=id.asc"),
       rest("bairros?select=*&disponivel=eq.true&order=nome.asc"),
       rest("configuracoes?select=chave,valor"),
-       rest("pao_adicionais?select=*&disponivel=eq.true&order=id.asc")
+       rest("pao_adicionais?select=*&disponivel=eq.true&order=id.asc"),
+       rest("lanche_adicionais?select=*&disponivel=eq.true&order=id.asc")
     ]);
-    produtos=p||[]; jantinhas=j||[]; paoAdicionais=pa||[];
+    produtos=p||[]; jantinhas=j||[]; paoAdicionais=pa||[]; lancheAdicionais=la||[];
     adicionais=(a||[]).filter(x=>["Bacon","Calabresa","Mussarela","Frango","Boi"].includes(x.nome));
     bairros=b||[];
     (c||[]).forEach(x=>configuracoes[x.chave]=x.valor);
@@ -128,9 +133,20 @@ async function carregarSite(){
 }
 
 function render(){
-  const macarrao=produtos.filter(p=>p.categoria!=="pao" && p.preco_g!=null);
-   const paes=produtos.filter(p=>p.categoria==="pao");
-  const bebidas=produtos.filter(p=>p.categoria!=="pao" && p.preco_g==null);
+  const categoriaVisual=p=>{
+    const c=String(p.categoria||"").toLowerCase();
+    if(c==="pao") return "pao";
+    if(["lanche","lanches"].includes(c)) return "lanche";
+    if(["bebida","bebidas"].includes(c)) return "bebida";
+    if(["macarrao","macarroes"].includes(c)) return "macarrao";
+    // Compatibilidade com registros antigos da categoria geral.
+    if(/refrigerante|coca.?cola|guaran[aá]|fanta|suco|[aá]gua|juninho|sprite|pepsi|bebida/i.test(p.nome||"")) return "bebida";
+    return p.preco_g==null?"bebida":"macarrao";
+  };
+  const macarrao=produtos.filter(p=>categoriaVisual(p)==="macarrao");
+  const paes=produtos.filter(p=>categoriaVisual(p)==="pao");
+  const lanches=produtos.filter(p=>categoriaVisual(p)==="lanche");
+  const bebidas=produtos.filter(p=>categoriaVisual(p)==="bebida");
 
   document.getElementById("macarrao").innerHTML=macarrao.length
     ? macarrao.map(p=>cardProduto(p,"produto",produtos.indexOf(p))).join("")
@@ -149,6 +165,16 @@ function render(){
         <button onclick="abrirPao(${produtos.indexOf(p)})">ESCOLHER</button>
       </div>`).join("")
     : '<div class="card">Nenhum pão disponível.</div>';
+
+  document.getElementById("lanches").innerHTML=lanches.length
+    ? lanches.map(p=>`<div class="card">
+        ${p.imagem_url?`<img src="${esc(p.imagem_url)}" alt="${esc(p.nome)}">`:""}
+        <h3>${esc(p.nome)}</h3>
+        <p class="muted">${esc(p.descricao||"")}</p>
+        <div class="price">${money(p.preco_p)}</div>
+        <button onclick="abrirLanche(${produtos.indexOf(p)})">ESCOLHER</button>
+      </div>`).join("")
+    : '<div class="card">Em breve, nossos lanches!</div>';
 
   document.getElementById("bebidas").innerHTML=bebidas.length
     ? bebidas.map(p=>`<div class="card">
@@ -226,6 +252,39 @@ function adicionarPao(){
   carrinho.push({nome:p.nome,tipo:"produto",ref_id:p.id,tamanho:null,
     quantidade:qty,preco_unitario:preco,adicionais:adds.map(a=>a.nome),
     subtotal:preco*qty});
+  closeModal();renderCarrinho();
+}
+
+function abrirLanche(index){
+  const p=produtos[index];
+  itemAtual={tipo:"lanche",index};
+  document.getElementById("modalContent").innerHTML=`
+    <h2>${esc(p.nome)}</h2>
+    <p>${esc(p.descricao||"")}</p>
+    <div class="price">Preço: ${money(p.preco_p)}</div>
+    <h3>Adicionais opcionais</h3>
+    ${lancheAdicionais.length?lancheAdicionais.map((a,i)=>`<label><input class="lancheAddCheck" type="checkbox" value="${i}" onchange="atualizarTotalLanche()"> ${esc(a.nome)} (+${money(a.preco)})</label>`).join(""):'<p class="muted">Sem adicionais disponíveis.</p>'}
+    <label>Quantidade<input id="qtyLanche" type="number" min="1" max="99" value="1" oninput="atualizarTotalLanche()"></label>
+    <div class="price">Total: <span id="totalLanche">${money(p.preco_p)}</span></div>
+    <button onclick="adicionarLanche()">ADICIONAR AO PEDIDO</button>`;
+  openModal();
+}
+function adicionaisLancheSelecionados(){
+  return [...document.querySelectorAll(".lancheAddCheck:checked")].map(el=>lancheAdicionais[Number(el.value)]);
+}
+function atualizarTotalLanche(){
+  const p=produtos[itemAtual.index];
+  const extras=adicionaisLancheSelecionados().reduce((s,a)=>s+Number(a.preco),0);
+  const qty=Math.min(99,Math.max(1,Math.floor(Number(document.getElementById("qtyLanche").value)||1)));
+  document.getElementById("totalLanche").textContent=money((Number(p.preco_p)+extras)*qty);
+}
+function adicionarLanche(){
+  const p=produtos[itemAtual.index];
+  const adds=adicionaisLancheSelecionados();
+  const qty=Math.min(99,Math.max(1,Math.floor(Number(document.getElementById("qtyLanche").value)||1)));
+  const preco=Number(p.preco_p)+adds.reduce((s,a)=>s+Number(a.preco),0);
+  carrinho.push({nome:p.nome,tipo:"produto",ref_id:p.id,tamanho:null,
+    quantidade:qty,preco_unitario:preco,adicionais:adds.map(a=>a.nome),subtotal:preco*qty});
   closeModal();renderCarrinho();
 }
 
